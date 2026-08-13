@@ -135,25 +135,24 @@ firma işbirliğine bağımlı olacak.
 
 ## MNG ile neler yapılabiliyor
 
-Apizone'da MNG'nin altında 12 farklı API ürünü yayında. **Hepsi kontrol edildi**
-(gerçek OpenAPI/Swagger şemaları çıkarıldı) — bu tablo hangilerinin
-`anadoluship`'e entegre edildiğini, hangilerinin bilerek `ShippingProvider`
-sözleşmesi dışında bırakıldığını gösterir:
+Apizone'da MNG'nin altında 12 farklı API ürünü yayında, hepsi kontrol edildi
+(gerçek OpenAPI/Swagger şemaları çıkarıldı). Bunlardan dördü `anadoluship`'e
+entegre edildi:
 
 | API Ürünü | Ne işe yarar | Durum |
 |---|---|---|
 | **Identity** | Token/JWT üretimi (kimlik doğrulama katmanı) | ✅ `MngProvider` içinde kullanılıyor |
-| **Barcode Command** | Sipariş oluşturma → gönderiye çevirme, iptal, barkod üretme (`PUT /updateshipment` de var) | ✅ `createShipment`/`cancelShipment` yazıldı — `updateShipment` sözleşme kapsamında değil, eklenmedi |
+| **Barcode Command** | Sipariş oluşturma → gönderiye çevirme, iptal, barkod üretme | ✅ `createShipment`/`cancelShipment` yazıldı |
 | **Standard Query** | Sipariş/gönderi bilgisi, durum, hareket sorgusu **ve** taşıma ücreti hesaplama | ✅ `trackShipment` (`GET /trackshipmentByShipmentId`) ve `calculateRate` (`POST /calculate`) yazıldı |
 | **CBS Info** | Şehir/ilçe/mahalle coğrafi kod listesi | ✅ `calculateRate` içinde şehir/ilçe adını MNG'nin istediği koda çevirmek için kullanılıyor (`getcities`/`getdistricts`, önbellekli) |
-| **Standard Command** | "Normal"/"İade" sipariş oluşturma, güncelleme, iptal (`createOrder`, `createReturnOrder`, `updateorder`, `cancelorder`) | 🔍 Kontrol edildi, entegre edilmedi — Barcode Command zaten `createShipment`/`cancelShipment`'ı karşılıyor, aynı işi ikinci bir yoldan yapmak gereksiz görüldü |
-| **Plus Command** | Detaylı/Pazaryeri sipariş oluşturma, alıcı oluşturma, teslimat iptali/problemi yanıtlama (`createDetailedOrder`, `createRecipient`, `createMarketPlaceOrder`, …) | 🔍 Kontrol edildi, kapsam dışı — pazaryeri-özel akışlar, `ShippingProvider` sözleşmesinde karşılığı yok |
-| **Plus Query** | İade kontrolü, irsaliye no ile takip, barkodla gönderi bilgisi, teslimat problemi listeleme, TTİ sorgusu | 🔍 Kontrol edildi, kapsam dışı — `trackShipment` zaten Standard Query ile karşılanıyor, bu ürün ek/nadir sorgu senaryoları için |
-| **Bulk Query** | Tarihe göre toplu gönderi/durum sorgusu (`getShipmentByDate`, `getDeliveredShipment`, `getStatusChangedShipments`) | 🔍 Kontrol edildi, kapsam dışı — `ShippingProvider` tekil gönderi bazlı çalışıyor, toplu senkronizasyon farklı bir kullanım deseni |
-| **Finance Query** | Gönderiye ait fatura ve komisyon fatura listesi | 🔍 Kontrol edildi, kapsam dışı — muhasebe/finans amaçlı, kargo gönderisi yaşam döngüsünün parçası değil |
-| **International** | Yurt dışı gönderi oluşturma/iptal (`createBasicOrder`, `cancelBasicOrder`) | 🔍 Kontrol edildi, kapsam dışı — gümrük/beyan alanları gerektiriyor, mevcut DTO'lar (`Address`, `Parcel`) bunu karşılamıyor |
-| **Utility** | API hata kodları/durumları hakkında genel bilgi (`getapierrorcodes`, `getapistatuses`) | 🔍 Kontrol edildi, kapsam dışı — geliştirici referansı, iş mantığına dahil değil |
-| **Next Tahsilat Makbuzu** (Mobil Kurye API) | Kuryenin mobil uygulamasında tahsilat makbuzu | 🔍 Kontrol edildi, kapsam dışı — B2B entegrasyon değil, kurye-içi mobil akış |
+
+Geri kalan sekiz ürün (Standard Command, Plus Command, Plus Query, Bulk
+Query, Finance Query, International, Utility, Next Tahsilat Makbuzu/Mobil
+Kurye API) kontrol edildi ama `ShippingProvider` sözleşmesinde karşılığı
+olmadığı için entegre edilmedi — pazaryeri-özel akışlar, toplu sorgu, fatura,
+gümrük/yurt dışı ve geliştirici-referans bilgisi gibi farklı kullanım
+senaryolarına hizmet ediyorlar. İsterseniz bunları [Apizone'daki API Ürünleri
+sayfasından](https://sandbox.mngkargo.com.tr/tr/product) inceleyebilirsiniz.
 
 `calculateRate` kullanırken dikkat: `RateQuoteData`'da **`receiverDistrict`
 zorunludur** (MNG'nin `/calculate` uç noktası şehir/ilçe kodu istiyor, sadece
