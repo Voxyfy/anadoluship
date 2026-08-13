@@ -13,6 +13,13 @@ SDK'sıdır**. Kargo takip API'si, sanal kargo entegrasyonu veya çok
 sağlayıcılı bir shipping SDK arayan Node.js/TypeScript geliştiricileri için
 tasarlandı.
 
+> 💡 **İlginizi çekebilir:** Aynı ekip tarafından geliştirilen, aynı
+> "çok sağlayıcı, tek arayüz" mimarisini Türk banka/ödeme sağlayıcıları için
+> uygulayan kütüphaneler de mevcut —
+> **[anadolupay](https://github.com/Voxyfy/anadolupay)** (PHP/Laravel) ve
+> **[anadolupay-node](https://github.com/Voxyfy/anadolupay-node)**
+> ([npm](https://www.npmjs.com/package/@voxyfy/anadolupay), Node.js/TypeScript).
+
 > ⚠️ **Erken aşama.** `FakeProvider`'ın yanında altı gerçek driver var:
 > **`MngProvider`**, **`UpsProvider`**, **`YurticiProvider`**,
 > **`ArasProvider`**, **`PttProvider`**, **`SuratProvider`** — hepsi ilgili
