@@ -1,6 +1,6 @@
 {
   "name": "@voxyfy/anadoluship",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Türk kargo firmaları (MNG Kargo, Yurtiçi Kargo, Aras Kargo, PTT Kargo, Sürat Kargo) ve UPS için tek arayüzlü, framework-bağımsız kargo ve gönderi takip kütüphanesi (Node.js/TypeScript SDK)",
   "license": "MIT",
   "type": "module",
