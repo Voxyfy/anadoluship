@@ -91,7 +91,6 @@ function mapMngEventStatus(eventStatus: string): ShipmentStatus {
     ['gonderihazirlandi', ShipmentStatus.Created],
     ['transferasamasinda', ShipmentStatus.InTransit],
     ['teslimatbirimineulasti', ShipmentStatus.InTransit],
-    ['alicradresineyonlendirildi', ShipmentStatus.OutForDelivery],
     ['aliciadresineyonlendirildi', ShipmentStatus.OutForDelivery],
     ['teslimedildi', ShipmentStatus.Delivered],
     ['teslimedilemedi', ShipmentStatus.Exception],

@@ -1,20 +1,27 @@
-# @voxyfy/anadoluship (Node.js / TypeScript)
+# @voxyfy/anadoluship — Node.js/TypeScript Kargo API Kütüphanesi
 
-Türk kargo firmaları (MNG Kargo, Yurtiçi Kargo, Aras Kargo, PTT Kargo, Sürat
-Kargo, UPS) için tek arayüzlü, **framework'e bağımlı olmayan** bir kargo/gönderi
-kütüphanesi.
+**anadoluship**, Türkiye'deki kargo firmalarının (**MNG Kargo API**,
+**Yurtiçi Kargo API**, **Aras Kargo API**, **PTT Kargo API**, **Sürat Kargo
+API**) ve **UPS**'in gönderi oluşturma, kargo takip ve gönderi iptal
+işlemlerini tek bir `ShippingProvider` arayüzü arkasında birleştiren,
+framework'e bağımlı olmayan bir **Node.js / TypeScript kargo entegrasyon
+SDK'sıdır**. Kargo takip API'si, sanal kargo entegrasyonu veya çok
+sağlayıcılı bir shipping SDK arayan Node.js/TypeScript geliştiricileri için
+tasarlandı.
 
-> ⚠️ **Erken aşama.** `FakeProvider`'ın yanında artık bir gerçek driver var:
-> **`MngProvider`** — Apizone'daki (sandbox.mngkargo.com.tr) gerçek OpenAPI/
-> Swagger şemalarına karşı yazıldı: `createShipment`, `cancelShipment`,
-> `trackShipment` ve `calculateRate` (`SupportsRateQuote`) hepsi implement
-> edildi ve mock'lanmış HTTP ile birim test kapsamında. **Henüz gerçek bir
-> MNG test müşteri hesabıyla ölçülmedi** — token endpoint'i için gereken
-> müşteri numarası/şifresi ayrı bir kimlik doğrulama katmanı, bkz.
-> [MNG ile başlarken](#mng-ile-başlarken). Apizone'daki 12 API ürününün
-> tamamı kontrol edildi; `ShippingProvider` sözleşmesine girmeyenler (fatura,
-> coğrafi veri, toplu sorgu vb.) bilerek sahte metodlarla şişirilmedi —
-> bkz. [MNG ile neler yapılabiliyor](#mng-ile-neler-yapılabiliyor).
+> ⚠️ **Erken aşama.** `FakeProvider`'ın yanında altı gerçek driver var:
+> **`MngProvider`**, **`UpsProvider`**, **`YurticiProvider`**,
+> **`ArasProvider`**, **`PttProvider`**, **`SuratProvider`** — hepsi ilgili
+> firmanın gerçek API şemasına (OpenAPI/Swagger veya SOAP WSDL) göre yazıldı
+> ve mock'lanmış HTTP ile birim test kapsamında. **Hiçbiri gerçek bir hesapla
+> ölçülmedi** — her firma kendi türünden bir engel çıkarıyor: MNG sayısal
+> müşteri numarası, UPS ödeme yöntemi eklenmiş bir gönderici hesabı, diğer
+> dördü ise kurumsal başvuru/sözleşme istiyor. Detaylar için
+> [Kapsam ve doğrulama durumu](#kapsam-ve-doğrulama-durumu-kargo-firmaları),
+> [MNG ile başlarken](#mng-ile-başlarken) ve
+> [UPS ile ilgili durum](#ups-ile-ilgili-durum) bölümlerine bakın. `Aras` ve
+> `Sürat` driver'larında `trackShipment`, `UPS` driver'ında `calculateRate`
+> bilerek implement edilmedi — sebepleri ilgili bölümlerde açıklanıyor.
 
 ## Amacımız
 
@@ -121,11 +128,20 @@ if (supportsRateQuote(provider)) {
 | Firma | Driver durumu | API tipi | Sandbox/test ortamı |
 |---|---|---|---|
 | MNG Kargo | **Yazıldı, doğrulanmadı** — `MngProvider` (create+cancel+track+rate) | REST/JSON, API key (`X-IBM-Client-Id/Secret`) + JWT bearer | Var — `sandbox.mngkargo.com.tr` ("Apizone", DHL eCommerce markalı), self-servis kayıt doğrulandı |
-| UPS | Planlandı | REST, OAuth2 (global Developer Kit) | Var — global CIE, Türkiye'ye özel değil |
-| Yurtiçi Kargo | Planlandı | SOAP/WSDL (+ kısmi REST) | Var — ayrı test host'u, kimlik başvuruya bağlı |
-| Aras Kargo | Planlandı | SOAP/WSDL | Var — ayrı test host'u, kimlik başvuruya bağlı |
-| PTT Kargo | Planlandı | SOAP/WSDL | Belirsiz — kanıt yetersiz |
-| Sürat Kargo | Planlandı | SOAP/ASMX | Yok — muhtemelen prod'da düşük hacimli deneme gerekiyor |
+| UPS | **Yazıldı, doğrulanmadı** — `UpsProvider` (create+cancel+track) | REST/JSON, OAuth2 Client Credentials | Var (CIE, `wwwcie.ups.com`) ama gönderici hesap numarası almak ödeme yöntemi eklemeyi gerektiriyor — bkz. [UPS ile ilgili durum](#ups-ile-ilgili-durum) |
+| Yurtiçi Kargo | **Yazıldı, doğrulanmadı** — `YurticiProvider` (create+cancel+track) | SOAP/WSDL (document/literal, `soapAction=''`) | Var — ayrı test host'u, kimlik (`wsUserName`/`wsPassword`) kurumsal başvuruya bağlı |
+| Aras Kargo | **Yazıldı, doğrulanmadı** — `ArasProvider` (create+cancel; track implement edilmedi) | SOAP/ASMX (`tempuri.org`) | Var — ayrı test host'u, kimlik kurumsal başvuruya bağlı |
+| PTT Kargo | **Yazıldı, doğrulanmadı** — `PttProvider` (create+cancel+track) | SOAP/WSDL (iki ayrı servis: kabul + hareket) | Belirsiz — ayrı bir sandbox bulunamadı, kimlik kurumsal sözleşme gerektiriyor |
+| Sürat Kargo | **Yazıldı, doğrulanmadı** — `SuratProvider` (create+cancel; track implement edilmedi) | SOAP/ASMX (`tempuri.org`) | Yok — sandbox'ı yok, tüm çağrılar prod'a gider |
+
+Yurtiçi/Aras/PTT/Sürat driver'ları, firmaların kimlik doğrulaması
+gerektirmeden herkese açık indirilebilen gerçek WSDL dosyalarından
+(SOAP servislerinin XML şeması) çıkarıldı — bir OpenAPI/Swagger dosyası
+değil ama aynı doğrulanabilirlik seviyesinde bir kaynak. Aras ve Sürat'ta
+`trackShipment` bilerek implement edilmedi: WSDL'deki tek takip
+operasyonları yapısı tanımsız düz bir metin veya sütun adları belirsiz bir
+ADO.NET tablosu döndürüyor — gerçek bir örnek yanıt görmeden alan adlarını
+tahmin etmemeyi seçtik.
 
 AnadoluPay'de öğrenilen en kalıcı ders burada da geçerli: bir driver'ın "doğru
 yazılmış olması" ile "gerçekten o kargo firmasına karşı çalışması" ayrı
@@ -176,9 +192,11 @@ doğrudan iletişime geçmek gerekiyor.
 
 1. `ShippingProvider` sözleşmesi + `FakeProvider` — ✅ tamam
 2. MNG Kargo driver'ı — ✅ `createShipment`/`cancelShipment`/`trackShipment`/`calculateRate` yazıldı ve mock'lu testlerle doğrulandı, ⏳ gerçek sandbox'a karşı doğrulanacak (sayısal müşteri numarası bekleniyor) — bkz. [MNG ile neler yapılabiliyor](#mng-ile-neler-yapılabiliyor)
-3. UPS driver'ı — global Developer Kit + CIE
-4. Yurtiçi Kargo, Aras Kargo driver'ları — test host'u var, kimlik bilgisi süreci daha yavaş
-5. PTT Kargo, Sürat Kargo driver'ları — sandbox netleştikçe/kurumsal erişim sağlandıkça
+3. UPS driver'ı — ✅ `createShipment`/`trackShipment`/`cancelShipment` yazıldı ve mock'lu testlerle doğrulandı, ⏳ gerçek sandbox'a karşı doğrulanacak (gönderici hesap numarası bekleniyor) — bkz. [UPS ile ilgili durum](#ups-ile-ilgili-durum)
+4. Yurtiçi Kargo driver'ı — ✅ `createShipment`/`trackShipment`/`cancelShipment` yazıldı ve mock'lu testlerle doğrulandı, ⏳ gerçek test hesabı bekleniyor (kurumsal başvuru)
+5. Aras Kargo driver'ı — ✅ `createShipment`/`cancelShipment` yazıldı, `trackShipment` bilerek implement edilmedi (ADO.NET DiffGram yanıtı), ⏳ gerçek test hesabı bekleniyor
+6. PTT Kargo driver'ı — ✅ `createShipment`/`trackShipment`/`cancelShipment` yazıldı, ⏳ gerçek kurumsal sözleşme bekleniyor
+7. Sürat Kargo driver'ı — ✅ `createShipment`/`cancelShipment` yazıldı, `trackShipment` bilerek implement edilmedi (yapısı tanımsız string yanıt), ⏳ gerçek hesap bekleniyor (sandbox yok)
 
 ## MNG ile başlarken
 
@@ -218,7 +236,7 @@ yazmak) için Apizone üzerinde şu adımları izleyin:
 7. **Kod ile çağırın:**
 
    ```ts
-   import { MngProvider, CreateShipmentData, Address, Parcel } from '@voxyfy/anadoluship';
+   import { MngProvider, CreateShipmentData, RateQuoteData, Address, Parcel } from '@voxyfy/anadoluship';
 
    const provider = new MngProvider({
      clientId: process.env.MNG_CLIENT_ID!,
@@ -244,7 +262,6 @@ yazmak) için Apizone üzerinde şu adımları izleyin:
    console.log(tracking.status, tracking.events);
 
    // Ücret sorgusu — receiverDistrict zorunlu (MNG şehir/ilçe kodu ister)
-   import { RateQuoteData } from '@voxyfy/anadoluship';
    const quote = await provider.calculateRate(
      new RateQuoteData('İstanbul', 'Ankara', new Parcel(1500, 2), 'Çankaya'),
    );
@@ -271,6 +288,101 @@ yazmak) için Apizone üzerinde şu adımları izleyin:
    kanıtlar, canlı test ise MNG'nin sandbox'ının bu isteği *gerçekte kabul
    ettiğini* kanıtlar. İkisi farklı şeyler doğrular, biri diğerinin yerini
    tutmaz.
+
+## UPS ile neler yapılabiliyor
+
+UPS'in API katalogunda 25'ten fazla ürün var (developer.ups.com/catalog).
+Bunlardan dördü `anadoluship`'e entegre edildi:
+
+| API Ürünü | Ne işe yarar | Durum |
+|---|---|---|
+| **Authorization (OAuth)** | Token üretimi — tüm entegrasyonlar için zorunlu | ✅ `UpsProvider` içinde kullanılıyor |
+| **Shipping** | Gönderi oluşturma, iptal (void), etiket alma | ✅ `createShipment`/`cancelShipment` yazıldı — etiket create yanıtına gömülü geliyor, ayrı `getLabel()` gerekmiyor |
+| **Tracking** | Gönderi durumu, hareket geçmişi | ✅ `trackShipment` yazıldı |
+| **Rating** | Ücret/servis karşılaştırma | 🔍 Kontrol edildi, entegre edilmedi — posta kodu + ülke kodu istiyor, `RateQuoteData` bu alanları içermiyor |
+
+Kalan ürünler (Address Validation, Time In Transit, Paperless Documents,
+Pickup, Dangerous Goods, Quantum View, World Ease, Forwarding, Commerce
+Guard, Customs Detail ve çoğu "Premium" işaretli ek hizmet) kontrol edildi
+ama `ShippingProvider` sözleşmesinde karşılığı yok — çoğu gümrük/uluslararası
+evrak, depo/lojistik entegrasyonu veya ek ücretli risk/doğrulama servisi.
+İsterseniz [UPS API Catalog'dan](https://developer.ups.com/catalog?loc=en_US)
+inceleyebilirsiniz.
+
+## UPS ile ilgili durum
+
+`UpsProvider` kodu yazıldı ve mock'lu testlerle doğrulandı, ama **gerçek
+UPS sandbox'ına (CIE) karşı hiç ölçülmedi** — MNG'den farklı olarak buradaki
+engel bir müşteri numarası istemekten ibaret değil:
+
+1. developer.ups.com'da "Create Application" akışında **"I need API
+   credentials because I want to integrate UPS technology into my
+   business"** seçilir (Client Credentials / Direct Integration — entegrasyon
+   sahibi aynı zamanda UPS gönderici ise kullanılan yol; kütüphanenin diğer
+   tüm driver'larıyla aynı model).
+2. Bu akış, kimlik bilgilerini bir **UPS gönderici hesap numarasına**
+   ("Choose an account to associate with these credentials for billing
+   purposes") bağlamanızı ister — sadece iki seçenek var: var olan bir hesabı
+   eklemek veya yeni bir hesap açmak.
+3. **Yeni bir UPS gönderici hesabı açmak bir ödeme yöntemi eklemeyi
+   gerektiriyor** (UPS.com hesap panelinde "Default Shipping Account" altında
+   "Add a Payment Method" çıkıyor). Bu, kart/ödeme bilgisi girmeyi gerektiren
+   bir adım — bilerek atlandı, kimse adına bu bilgiyi girmiyoruz.
+
+Yani `UpsProvider`, developer.ups.com'un kamuya açık referans
+dokümantasyonuna (OAuth Client Credentials, Shipping, Tracking API sayfaları)
+göre yazıldı ama MNG'nin indirilebilir OpenAPI zip'i gibi tek tek
+doğrulanabilecek bir kaynağa dayanmıyor — özellikle Tracking API'nin yanıt
+şeması UPS'in yıllardır stabil, kamuya açık dokümantasyonundan çıkarıldı,
+indirilip programatik olarak ayrıştırılmadı. Gerçek bir hesapla test etmek
+isteyen biri şu adımları kendisi tamamlamalı: UPS.com'da bir ödeme yöntemi
+ekleyip gönderici hesabı açmak, developer.ups.com'da bu hesaba bağlı bir
+uygulama oluşturmak, client id/secret'ı `UpsProvider`'a geçmek.
+
+```ts
+import { UpsProvider, CreateShipmentData, Address, Parcel } from '@voxyfy/anadoluship';
+
+const provider = new UpsProvider({
+  clientId: process.env.UPS_CLIENT_ID!,
+  clientSecret: process.env.UPS_CLIENT_SECRET!,
+  accountNumber: process.env.UPS_ACCOUNT_NUMBER!,
+  // baseUrl: 'https://wwwcie.ups.com' (varsayılan, CIE sandbox)
+});
+
+const shipment = await provider.createShipment(
+  new CreateShipmentData(
+    'order-123',
+    new Address('Gönderen A.Ş.', '05000000000', 'İstanbul', 'Kadıköy', 'Örnek Mah. 1. Sk. No:1'),
+    new Address('Alıcı Ali', '05000000001', 'Ankara', 'Çankaya', 'Örnek Mah. 2. Sk. No:2'),
+    new Parcel(1500, 2),
+  ),
+);
+
+const tracking = await provider.trackShipment(shipment.trackingNumber);
+console.log(tracking.status, tracking.events);
+```
+
+## Yurtiçi / Aras / PTT / Sürat ile ilgili durum
+
+Bu dört driver, ilgili firmaların kimlik doğrulaması gerektirmeden herkese
+açık indirilebilen gerçek WSDL dosyalarından yazıldı. MNG/UPS'teki gibi bir
+geliştirici portalları olmadığı (veya bulunamadığı) için Apizone/developer.ups.com
+tarzı adım adım bir "başlarken" rehberi yok — kimlik bilgisi doğrudan ilgili
+firmanın satış/entegrasyon ekibinden kurumsal başvuru yoluyla alınıyor.
+
+| Firma | Kullanılan SOAP operasyonları | Not |
+|---|---|---|
+| **Yurtiçi Kargo** | `createShipment`, `queryShipment`, `cancelShipment` | `queryShipment` yalnızca anlık durumu döner, hareket/olay listesi yok — `TrackingResponse.events` her zaman boş |
+| **Aras Kargo** | `SetOrder`, `SetCanceledShipment` | `trackShipment` implement edilmedi — tek takip operasyonu (`GetCargoTransaction`) sütun adları WSDL'de tanımsız bir ADO.NET DiffGram döndürüyor |
+| **PTT Kargo** | `kabulEkle2`, `barkodSorgu`, `barkodVeriSil` | İki farklı WSDL/servis kullanılıyor (kabul ve hareket) — `PttProviderConfig`'te `kabulBaseUrl`/`hareketBaseUrl` ayrı ayrı verilir |
+| **Sürat Kargo** | `OrtakBarkodOlustur`, `GonderiGeriCek` | `trackShipment` implement edilmedi — tüm takip operasyonları yapısı tanımsız düz metin döndürüyor; ayrıca bu firmada sandbox yok, tüm çağrılar doğrudan prod'a gider |
+
+Dördünde de `ShippingOrderVO`/`GonderiModel`/`InputDongu2` gibi istek
+nesnelerinde WSDL'in zorunlu gösterdiği ama anlamı/geçerli değerleri
+dokümante edilmemiş alanlar var (örn. Yurtiçi'nin `taxOfficeId`/
+`dcCreditRule`, Sürat'ın `KargoTuru`/`OdemeTipi`). Bunlar driver
+config'lerinde açık parametre olarak bırakıldı; gerçek değerleri kurumsal
+sözleşmenizden/entegrasyon ekibinizden almanız gerekiyor.
 
 ## İlgili projeler
 
