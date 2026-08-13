@@ -30,11 +30,14 @@ Neden bu işe değer bulduk:
   üretilmiş boş iskeletler olduğunu ve projenin ~2 yıldır terk edildiğini
   gördük.
 - **Sandbox/dokümantasyon durumu firmadan firmaya çok değişiyor.** MNG'nin
-  self-servis geliştirici portalı (`apizone.mngkargo.com.tr`) ve açık
-  sandbox'ı var; UPS'in global Developer Kit + CIE sandbox'ı var. Yurtiçi ve
-  Aras'ın ayrı test host'ları var ama kimlik bilgisi almak kurumsal
-  başvuruya bağlı. PTT belirsiz, Sürat'ta hiç sandbox yok. Bu yüzden
-  driver'lar sırayla, doğrulanabilirlik kolaylığına göre yazılacak.
+  self-servis geliştirici portalı (`sandbox.mngkargo.com.tr`, "Apizone" —
+  şu anda DHL eCommerce markası altında yayınlanıyor) ve açık sandbox'ı var,
+  kayıt olup API ürünlerine (Barcode Command, Bulk Query, CBS Info, Finance
+  Query vb.) doğrudan erişilebiliyor; UPS'in global Developer Kit + CIE
+  sandbox'ı var. Yurtiçi ve Aras'ın ayrı test host'ları var ama kimlik
+  bilgisi almak kurumsal başvuruya bağlı. PTT belirsiz, Sürat'ta hiç sandbox
+  yok. Bu yüzden driver'lar sırayla, doğrulanabilirlik kolaylığına göre
+  yazılacak.
 
 ## Kurulum
 
@@ -110,7 +113,7 @@ if (supportsRateQuote(provider)) {
 
 | Firma | Driver durumu | API tipi | Sandbox/test ortamı |
 |---|---|---|---|
-| MNG Kargo | Planlandı (sıradaki) | REST/JSON, OAuth2 | Var — `sandbox.mngkargo.com.tr`, self-servis |
+| MNG Kargo | Planlandı (sıradaki) | REST/JSON, OAuth2 | Var — `sandbox.mngkargo.com.tr` ("Apizone", DHL eCommerce markalı), self-servis kayıt doğrulandı |
 | UPS | Planlandı | REST, OAuth2 (global Developer Kit) | Var — global CIE, Türkiye'ye özel değil |
 | Yurtiçi Kargo | Planlandı | SOAP/WSDL (+ kısmi REST) | Var — ayrı test host'u, kimlik başvuruya bağlı |
 | Aras Kargo | Planlandı | SOAP/WSDL | Var — ayrı test host'u, kimlik başvuruya bağlı |
