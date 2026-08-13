@@ -6,12 +6,15 @@ kütüphanesi.
 
 > ⚠️ **Erken aşama.** `FakeProvider`'ın yanında artık bir gerçek driver var:
 > **`MngProvider`** — Apizone'daki (sandbox.mngkargo.com.tr) gerçek OpenAPI/
-> Swagger şemalarına karşı yazıldı (`createShipment`, `cancelShipment`).
-> **Henüz gerçek bir MNG test müşteri hesabıyla ölçülmedi** — token endpoint'i
-> için gereken müşteri numarası/şifresi ayrı bir kimlik doğrulama katmanı,
-> bkz. [MNG ile başlarken](#mng-ile-başlarken). `trackShipment` bilerek
-> implement edilmedi; MNG'nin sorgu API'si henüz incelenmedi ve tahmini şema
-> ile sahte bir driver yazmaktansa açıkça "henüz yok" demeyi tercih ettik.
+> Swagger şemalarına karşı yazıldı: `createShipment`, `cancelShipment`,
+> `trackShipment` ve `calculateRate` (`SupportsRateQuote`) hepsi implement
+> edildi ve mock'lanmış HTTP ile birim test kapsamında. **Henüz gerçek bir
+> MNG test müşteri hesabıyla ölçülmedi** — token endpoint'i için gereken
+> müşteri numarası/şifresi ayrı bir kimlik doğrulama katmanı, bkz.
+> [MNG ile başlarken](#mng-ile-başlarken). Apizone'daki 12 API ürününün
+> tamamı kontrol edildi; `ShippingProvider` sözleşmesine girmeyenler (fatura,
+> coğrafi veri, toplu sorgu vb.) bilerek sahte metodlarla şişirilmedi —
+> bkz. [MNG ile neler yapılabiliyor](#mng-ile-neler-yapılabiliyor).
 
 ## Amacımız
 
@@ -117,7 +120,7 @@ if (supportsRateQuote(provider)) {
 
 | Firma | Driver durumu | API tipi | Sandbox/test ortamı |
 |---|---|---|---|
-| MNG Kargo | **Yazıldı, doğrulanmadı** — `MngProvider` (create+cancel) | REST/JSON, API key (`X-IBM-Client-Id/Secret`) + JWT bearer | Var — `sandbox.mngkargo.com.tr` ("Apizone", DHL eCommerce markalı), self-servis kayıt doğrulandı |
+| MNG Kargo | **Yazıldı, doğrulanmadı** — `MngProvider` (create+cancel+track+rate) | REST/JSON, API key (`X-IBM-Client-Id/Secret`) + JWT bearer | Var — `sandbox.mngkargo.com.tr` ("Apizone", DHL eCommerce markalı), self-servis kayıt doğrulandı |
 | UPS | Planlandı | REST, OAuth2 (global Developer Kit) | Var — global CIE, Türkiye'ye özel değil |
 | Yurtiçi Kargo | Planlandı | SOAP/WSDL (+ kısmi REST) | Var — ayrı test host'u, kimlik başvuruya bağlı |
 | Aras Kargo | Planlandı | SOAP/WSDL | Var — ayrı test host'u, kimlik başvuruya bağlı |
@@ -132,24 +135,30 @@ firma işbirliğine bağımlı olacak.
 
 ## MNG ile neler yapılabiliyor
 
-Apizone'da MNG'nin altında 12 farklı API ürünü yayında. Bu tablo hangilerinin
-`anadoluship`'e entegre edildiğini, hangilerinin henüz sadece keşfedildiğini
-gösterir:
+Apizone'da MNG'nin altında 12 farklı API ürünü yayında. **Hepsi kontrol edildi**
+(gerçek OpenAPI/Swagger şemaları çıkarıldı) — bu tablo hangilerinin
+`anadoluship`'e entegre edildiğini, hangilerinin bilerek `ShippingProvider`
+sözleşmesi dışında bırakıldığını gösterir:
 
 | API Ürünü | Ne işe yarar | Durum |
 |---|---|---|
 | **Identity** | Token/JWT üretimi (kimlik doğrulama katmanı) | ✅ `MngProvider` içinde kullanılıyor |
-| **Barcode Command** | Sipariş oluşturma → gönderiye çevirme, güncelleme, iptal, barkod üretme | ✅ `createShipment`/`cancelShipment` yazıldı — `updateShipment` henüz yok |
-| **Standard Query** | Sipariş/gönderi bilgisi, durum, hareket sorgusu **ve** taşıma ücreti hesaplama | ⏳ Planlandı — `trackShipment` ve `calculateRate` (`SupportsRateQuote`) için gereken bu |
-| **Standard Command** | "Normal"/"İade" sipariş oluşturma, güncelleme, iptal | ⏳ İncelenmedi |
-| **Plus Command** | Detaylı/Pazaryeri sipariş oluşturma, teslimat iptali, alıcı oluşturma, teslimat problemi yanıtlama | ⏳ İncelenmedi |
-| **Plus Query** | İade gönderi listeleme, irsaliye no ile hareket, tarih/barkod ile gönderi bilgisi, teslimat problemi listeleme | ⏳ İncelenmedi |
-| **Bulk Query** | Aynı istekte birden çok sipariş/gönderi bilgisi, durumu, hareketi | ⏳ İncelenmedi |
-| **Finance Query** | Gönderiye ait fatura ve komisyon fatura listesi | ⏳ İncelenmedi — kapsam dışı olabilir |
-| **CBS Info** | Şehir/ilçe/mahalle coğrafi veri, servis dışı bölge listesi | ⏳ İncelenmedi — adres doğrulama için ileride faydalı olabilir |
-| **International** | Yurt dışı gönderi işlemleri | ⏳ İncelenmedi |
-| **Utility** | API'lerle ilgili genel bilgi döndürür | ⏳ İncelenmedi — düşük öncelik |
-| **Next Tahsilat Makbuzu** (Mobil Kurye API) | Kuryenin mobil uygulamasında tahsilat makbuzu | ❌ Kapsam dışı — B2B entegrasyon değil, kurye-içi mobil akış |
+| **Barcode Command** | Sipariş oluşturma → gönderiye çevirme, iptal, barkod üretme (`PUT /updateshipment` de var) | ✅ `createShipment`/`cancelShipment` yazıldı — `updateShipment` sözleşme kapsamında değil, eklenmedi |
+| **Standard Query** | Sipariş/gönderi bilgisi, durum, hareket sorgusu **ve** taşıma ücreti hesaplama | ✅ `trackShipment` (`GET /trackshipmentByShipmentId`) ve `calculateRate` (`POST /calculate`) yazıldı |
+| **CBS Info** | Şehir/ilçe/mahalle coğrafi kod listesi | ✅ `calculateRate` içinde şehir/ilçe adını MNG'nin istediği koda çevirmek için kullanılıyor (`getcities`/`getdistricts`, önbellekli) |
+| **Standard Command** | "Normal"/"İade" sipariş oluşturma, güncelleme, iptal (`createOrder`, `createReturnOrder`, `updateorder`, `cancelorder`) | 🔍 Kontrol edildi, entegre edilmedi — Barcode Command zaten `createShipment`/`cancelShipment`'ı karşılıyor, aynı işi ikinci bir yoldan yapmak gereksiz görüldü |
+| **Plus Command** | Detaylı/Pazaryeri sipariş oluşturma, alıcı oluşturma, teslimat iptali/problemi yanıtlama (`createDetailedOrder`, `createRecipient`, `createMarketPlaceOrder`, …) | 🔍 Kontrol edildi, kapsam dışı — pazaryeri-özel akışlar, `ShippingProvider` sözleşmesinde karşılığı yok |
+| **Plus Query** | İade kontrolü, irsaliye no ile takip, barkodla gönderi bilgisi, teslimat problemi listeleme, TTİ sorgusu | 🔍 Kontrol edildi, kapsam dışı — `trackShipment` zaten Standard Query ile karşılanıyor, bu ürün ek/nadir sorgu senaryoları için |
+| **Bulk Query** | Tarihe göre toplu gönderi/durum sorgusu (`getShipmentByDate`, `getDeliveredShipment`, `getStatusChangedShipments`) | 🔍 Kontrol edildi, kapsam dışı — `ShippingProvider` tekil gönderi bazlı çalışıyor, toplu senkronizasyon farklı bir kullanım deseni |
+| **Finance Query** | Gönderiye ait fatura ve komisyon fatura listesi | 🔍 Kontrol edildi, kapsam dışı — muhasebe/finans amaçlı, kargo gönderisi yaşam döngüsünün parçası değil |
+| **International** | Yurt dışı gönderi oluşturma/iptal (`createBasicOrder`, `cancelBasicOrder`) | 🔍 Kontrol edildi, kapsam dışı — gümrük/beyan alanları gerektiriyor, mevcut DTO'lar (`Address`, `Parcel`) bunu karşılamıyor |
+| **Utility** | API hata kodları/durumları hakkında genel bilgi (`getapierrorcodes`, `getapistatuses`) | 🔍 Kontrol edildi, kapsam dışı — geliştirici referansı, iş mantığına dahil değil |
+| **Next Tahsilat Makbuzu** (Mobil Kurye API) | Kuryenin mobil uygulamasında tahsilat makbuzu | 🔍 Kontrol edildi, kapsam dışı — B2B entegrasyon değil, kurye-içi mobil akış |
+
+`calculateRate` kullanırken dikkat: `RateQuoteData`'da **`receiverDistrict`
+zorunludur** (MNG'nin `/calculate` uç noktası şehir/ilçe kodu istiyor, sadece
+şehir yetmiyor) — verilmezse `MngProvider` ağ çağrısı yapmadan açık bir hata
+fırlatır.
 
 **Önemli not — kimlik doğrulama iki katmanlı:** `X-IBM-Client-Id`/
 `X-IBM-Client-Secret` sadece *uygulamanızı* (Apizone'daki API tüketicisini)
@@ -167,7 +176,7 @@ doğrudan iletişime geçmek gerekiyor.
 ## Yol haritası
 
 1. `ShippingProvider` sözleşmesi + `FakeProvider` — ✅ tamam
-2. MNG Kargo driver'ı — ✅ `createShipment`/`cancelShipment` yazıldı, ⏳ gerçek sandbox'a karşı doğrulanacak (müşteri numarası bekleniyor), ⏳ `trackShipment`/`calculateRate` (Standard Query API inceleme bekliyor) — bkz. [MNG ile neler yapılabiliyor](#mng-ile-neler-yapılabiliyor)
+2. MNG Kargo driver'ı — ✅ `createShipment`/`cancelShipment`/`trackShipment`/`calculateRate` yazıldı ve mock'lu testlerle doğrulandı, ⏳ gerçek sandbox'a karşı doğrulanacak (sayısal müşteri numarası bekleniyor) — bkz. [MNG ile neler yapılabiliyor](#mng-ile-neler-yapılabiliyor)
 3. UPS driver'ı — global Developer Kit + CIE
 4. Yurtiçi Kargo, Aras Kargo driver'ları — test host'u var, kimlik bilgisi süreci daha yavaş
 5. PTT Kargo, Sürat Kargo driver'ları — sandbox netleştikçe/kurumsal erişim sağlandıkça
@@ -189,9 +198,13 @@ yazmak) için Apizone üzerinde şu adımları izleyin:
    sekmesinde **API Anahtarı** (`X-IBM-Client-Id`) ve **API Güvenlik
    Dizgisi** (`X-IBM-Client-Secret`, göz simgesiyle görünür hale gelir) yer
    alır.
-4. **Barcode Command API'ye abone olun** — *API Ürünleri → Barcode Command →
-   Default Plan → Seç*, uygulamanızı seçip aboneliği onaylayın (ücretsiz,
-   onay gerektirmiyor).
+4. **İhtiyacınız olan her API ürününe ayrı ayrı abone olun** — *API Ürünleri →
+   [Ürün adı] → Default Plan → Seç*, uygulamanızı seçip aboneliği onaylayın
+   (hepsi ücretsiz, onay gerektirmiyor). `MngProvider` şu ürünleri kullanıyor,
+   dördüne de abone olmanız gerekir: **Identity**, **Barcode Command**,
+   **Standard Query**, **CBS Info**. Bir ürüne abone olmak diğerine otomatik
+   erişim vermiyor — bunu `/token` çağrısında 401 alarak öğrendik
+   ("Cannot find valid subscription for the incoming API request").
 5. **Test müşteri numarası/şifresi edinin** — bu, uygulama kimliğinden
    ayrı bir katman: `MngProvider`'ın kullandığı `/mngapi/api/token`
    endpoint'i bir **MNG Müşteri Numarası + şifresi** ister. Bunu
@@ -226,21 +239,39 @@ yazmak) için Apizone üzerinde şu adımları izleyin:
    );
 
    console.log(shipment.trackingNumber);
+
+   // Takip
+   const tracking = await provider.trackShipment(shipment.trackingNumber);
+   console.log(tracking.status, tracking.events);
+
+   // Ücret sorgusu — receiverDistrict zorunlu (MNG şehir/ilçe kodu ister)
+   import { RateQuoteData } from '@voxyfy/anadoluship';
+   const quote = await provider.calculateRate(
+     new RateQuoteData('İstanbul', 'Ankara', new Parcel(1500, 2), 'Çankaya'),
+   );
+   console.log(quote.amount, quote.currency);
    ```
 
-8. **Gerçek sandbox'a karşı test edin** — `tests/MngProvider.live.test.ts`,
-   yukarıdaki 4 ortam değişkeni tanımlıysa gerçek `testapi.mngkargo.com.tr`
-   uç noktasına çağrı yapar; tanımlı değilse otomatik atlanır (CI'yı
-   kırmaz):
+8. **Testleri çalıştırın** — iki katman var:
 
-   ```bash
-   MNG_CLIENT_ID=... MNG_CLIENT_SECRET=... MNG_CUSTOMER_NUMBER=... MNG_PASSWORD=... npm test
-   ```
+   - **Birim testler** (`tests/MngProvider.test.ts`) — `fetch` mock'lanır,
+     gerçek bir hesap gerektirmez, her zaman çalışır. Apizone'dan çıkardığımız
+     gerçek istek/yanıt şemalarına göre `createShipment`/`trackShipment`/
+     `cancelShipment`/`calculateRate`'in doğru URL, header ve body ürettiğini
+     doğrular.
+   - **Canlı test** (`tests/MngProvider.live.test.ts`) — yukarıdaki 4 ortam
+     değişkeni tanımlıysa gerçek `testapi.mngkargo.com.tr` uç noktasına çağrı
+     yapar; tanımlı değilse otomatik atlanır (CI'yı kırmaz):
 
-   Müşteri numarası/şifresi henüz elinizde yoksa (adım 5), bu test atlanmış
-   olarak görünecektir — `createShipment`/`cancelShipment` kodu derlenip
-   birim test kapsamında doğrulanmış olsa da, gerçek API'ye karşı henüz
-   ölçülmemiş demektir.
+     ```bash
+     MNG_CLIENT_ID=... MNG_CLIENT_SECRET=... MNG_CUSTOMER_NUMBER=... MNG_PASSWORD=... npm test
+     ```
+
+   Müşteri numarası/şifresi henüz elinizde yoksa (adım 5), canlı test atlanmış
+   olarak görünecektir — birim testler kodun şemaya *uyumlu* olduğunu
+   kanıtlar, canlı test ise MNG'nin sandbox'ının bu isteği *gerçekte kabul
+   ettiğini* kanıtlar. İkisi farklı şeyler doğrular, biri diğerinin yerini
+   tutmaz.
 
 ## İlgili projeler
 
