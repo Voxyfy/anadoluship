@@ -32,3 +32,5 @@ export {
 } from './errors/AnadoluShipError.js';
 
 export { FakeProvider } from './providers/FakeProvider.js';
+export { MngProvider } from './providers/mng/MngProvider.js';
+export type { MngProviderConfig } from './providers/mng/MngProvider.js';
