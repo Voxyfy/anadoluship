@@ -1,0 +1,53 @@
+{
+  "name": "@voxyfy/anadoluship",
+  "version": "0.1.0",
+  "description": "Türk kargo firmaları (MNG, Yurtiçi, Aras, PTT, Sürat, UPS) için tek arayüzlü, framework-bağımsız kargo/gönderi kütüphanesi (Node.js/TypeScript)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "keywords": [
+    "kargo",
+    "shipping",
+    "mng-kargo",
+    "yurtici-kargo",
+    "aras-kargo",
+    "ptt-kargo",
+    "turkey"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Voxyfy/anadoluship.git"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsup": "^8.2.4",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
