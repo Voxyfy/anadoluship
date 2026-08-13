@@ -21,16 +21,14 @@ taşıma girişimidir.
 Neden bu işe değer bulduk:
 
 - **Node/TS ekosisteminde bu paketin dengi yok.** Gördüğümüz kargo
-  kütüphaneleri (`yurtici-kargo-react`, `kargojs`, tekil PHP paketleri gibi)
-  ya tek bir firmayı kapsıyor ya da web scraping tabanlı takip yapıyor. Çok
-  sağlayıcılı, testli, gerçek API'ye dayanan bir paket bu ekosistemde henüz
-  yok.
-- **En yakın rakip (Go: `mstgnz/shipping`) olgun değil.** İncelediğimizde
-  12 firma × 6 fonksiyondan (create/track/cancel × yurt içi/yurt dışı)
-  sadece 1'inin gerçekten çalıştığını, testlerin IDE tarafından üretilmiş
-  boş iskeletler olduğunu ve projenin ~2 yıldır terk edildiğini gördük. PHP
-  ekosisteminde `omniship-*` paket ailesi (Yurtiçi/MNG/Aras carrier'ları) da
-  henüz derinlemesine değerlendirilmedi — bkz. [Durum](#durum).
+  kütüphaneleri ya tek bir firmayı kapsıyor ya da web scraping tabanlı takip
+  yapıyor. Çok sağlayıcılı, testli, gerçek API'ye dayanan bir paket bu
+  ekosistemde henüz yok.
+- **Mevcut açık kaynak girişimleri olgun değil.** İncelediğimiz en kapsamlı
+  girişimde 12 firma × 6 fonksiyondan (create/track/cancel × yurt içi/yurt
+  dışı) sadece 1'inin gerçekten çalıştığını, testlerin IDE tarafından
+  üretilmiş boş iskeletler olduğunu ve projenin ~2 yıldır terk edildiğini
+  gördük.
 - **Sandbox/dokümantasyon durumu firmadan firmaya çok değişiyor.** MNG'nin
   self-servis geliştirici portalı (`apizone.mngkargo.com.tr`) ve açık
   sandbox'ı var; UPS'in global Developer Kit + CIE sandbox'ı var. Yurtiçi ve
